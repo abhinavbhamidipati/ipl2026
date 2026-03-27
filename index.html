@@ -1,0 +1,1169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>IPL Fantasy Snake Draft</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Barlow:wght@300;400;500;600&family=Barlow+Condensed:wght@400;600;700&display=swap" rel="stylesheet" />
+<style>
+/* ============================================================
+   CSS VARIABLES & RESET
+   ============================================================ */
+:root {
+  --bg:        #0a0c10;
+  --surface:   #111620;
+  --card:      #161d2b;
+  --border:    #1f2c44;
+  --accent:    #f5a623;
+  --accent2:   #e8333a;
+  --teal:      #00c9a7;
+  --text:      #e8ecf0;
+  --muted:     #6b7b93;
+  --tier-s:    #f5a623;
+  --tier-a:    #00c9a7;
+  --tier-b:    #6e9ef5;
+  --tier-c:    #8f7cdb;
+  --drafted:   #2a3040;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Barlow', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ============================================================
+   LAYOUT
+   ============================================================ */
+#app { display: flex; flex-direction: column; min-height: 100vh; }
+
+header {
+  background: var(--surface);
+  border-bottom: 2px solid var(--accent);
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  position: sticky; top: 0; z-index: 100;
+}
+
+header h1 {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--accent);
+  text-transform: uppercase;
+}
+
+#turn-banner {
+  margin-left: auto;
+  background: var(--accent);
+  color: #000;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  padding: 6px 20px;
+  border-radius: 4px;
+  display: none;
+}
+
+#status-pill {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+main {
+  display: grid;
+  grid-template-columns: 320px 1fr 300px;
+  gap: 0;
+  flex: 1;
+}
+
+/* ============================================================
+   PANELS
+   ============================================================ */
+.panel {
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+}
+.panel:last-child { border-right: none; }
+
+.panel-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 14px 18px 10px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.panel-body { padding: 16px 18px; flex: 1; overflow-y: auto; }
+
+/* ============================================================
+   SCREENS / PHASES
+   ============================================================ */
+.screen { display: none; }
+.screen.active { display: flex; flex-direction: column; gap: 14px; }
+
+/* ============================================================
+   FORMS & INPUTS
+   ============================================================ */
+input[type="text"] {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-family: 'Barlow', sans-serif;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+input[type="text"]:focus { border-color: var(--accent); }
+
+label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; display: block; }
+
+/* ============================================================
+   BUTTONS
+   ============================================================ */
+.btn {
+  display: inline-block;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.btn:hover { transform: translateY(-1px); }
+.btn:active { transform: translateY(0); }
+
+.btn-primary   { background: var(--accent); color: #000; }
+.btn-primary:hover { background: #ffbe4a; }
+
+.btn-danger    { background: var(--accent2); color: #fff; }
+.btn-danger:hover { background: #ff555c; }
+
+.btn-ghost     { background: transparent; border: 1px solid var(--border); color: var(--text); }
+.btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+.btn-teal      { background: var(--teal); color: #000; }
+.btn-teal:hover { background: #00e8c1; }
+
+.btn-sm { padding: 6px 14px; font-size: 13px; }
+.btn-full { width: 100%; text-align: center; }
+
+.btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+/* ============================================================
+   TEAM LIST (JOIN PHASE)
+   ============================================================ */
+.team-list { display: flex; flex-direction: column; gap: 8px; }
+.team-item {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.team-num {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--accent);
+  min-width: 24px;
+}
+.team-name-big { font-weight: 600; font-size: 15px; }
+.team-owner    { font-size: 12px; color: var(--muted); }
+
+/* ============================================================
+   DRAFT ORDER (LEFT PANEL)
+   ============================================================ */
+.order-list { display: flex; flex-direction: column; gap: 6px; }
+.order-item {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.2s;
+}
+.order-item.current {
+  border-color: var(--accent);
+  background: rgba(245,166,35,0.1);
+  box-shadow: 0 0 12px rgba(245,166,35,0.2);
+}
+.order-item.done { opacity: 0.4; }
+
+.pick-num {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--muted);
+  min-width: 30px;
+  text-align: center;
+}
+.order-item.current .pick-num { color: var(--accent); }
+
+.team-count {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--muted);
+  font-family: 'Barlow Condensed', sans-serif;
+}
+
+/* ============================================================
+   PLAYER POOL (CENTER PANEL)
+   ============================================================ */
+#player-panel { border-right: 1px solid var(--border); }
+
+.search-bar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.search-bar input { flex: 1; }
+
+.filter-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.filter-btn {
+  padding: 5px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  font-family: 'Barlow', sans-serif;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.filter-btn.active { background: var(--accent); border-color: var(--accent); color: #000; font-weight: 600; }
+.filter-btn:hover:not(.active) { border-color: var(--accent); color: var(--accent); }
+
+.filter-btn.tier-s.active { background: var(--tier-s); border-color: var(--tier-s); color: #000; }
+.filter-btn.tier-a.active { background: var(--tier-a); border-color: var(--tier-a); color: #000; }
+.filter-btn.tier-b.active { background: var(--tier-b); border-color: var(--tier-b); color: #000; }
+.filter-btn.tier-c.active { background: var(--tier-c); border-color: var(--tier-c); color: #fff; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+th {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+}
+th:hover { color: var(--accent); }
+
+td {
+  padding: 9px 10px;
+  border-bottom: 1px solid rgba(31,44,68,0.5);
+  vertical-align: middle;
+}
+tr:hover td { background: rgba(245,166,35,0.04); }
+tr.drafted td { opacity: 0.35; }
+tr.drafted { pointer-events: none; }
+
+/* Tier badges */
+.tier-badge {
+  display: inline-block;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+}
+.tier-s { background: rgba(245,166,35,0.15); color: var(--tier-s); border: 1px solid var(--tier-s); }
+.tier-a { background: rgba(0,201,167,0.15); color: var(--tier-a); border: 1px solid var(--tier-a); }
+.tier-b { background: rgba(110,158,245,0.15); color: var(--tier-b); border: 1px solid var(--tier-b); }
+.tier-c { background: rgba(143,124,219,0.15); color: var(--tier-c); border: 1px solid var(--tier-c); }
+
+.overseas-dot {
+  display: inline-block;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--teal);
+  margin-right: 4px;
+}
+
+.role-tag {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+/* ============================================================
+   DRAFT BOARD (RIGHT PANEL)
+   ============================================================ */
+.pick-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  margin-bottom: 6px;
+  background: var(--card);
+}
+.pick-row .pick-n {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 14px;
+  color: var(--muted);
+  min-width: 28px;
+}
+.pick-row .pick-player { font-weight: 600; font-size: 14px; flex: 1; }
+.pick-row .pick-team { font-size: 12px; color: var(--muted); }
+.pick-row .pick-tier { margin-left: auto; }
+
+/* ============================================================
+   ADMIN CONTROLS BAR
+   ============================================================ */
+#admin-bar {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 10px 24px;
+  display: none;
+  gap: 12px;
+  align-items: center;
+}
+#admin-bar.visible { display: flex; }
+
+#round-info {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 15px;
+  color: var(--muted);
+  margin-right: auto;
+}
+
+/* ============================================================
+   SETUP SCREEN (FULL PAGE)
+   ============================================================ */
+#setup-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.setup-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 40px 48px;
+  width: 500px;
+  max-width: 95vw;
+}
+
+.setup-logo {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  text-align: center;
+  margin-bottom: 6px;
+}
+.setup-sub {
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+  letter-spacing: 1px;
+  margin-bottom: 32px;
+  text-transform: uppercase;
+}
+
+.setup-section { margin-bottom: 24px; }
+.setup-section h3 {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--accent);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 6px;
+}
+
+.input-row { display: flex; gap: 10px; margin-bottom: 10px; }
+.input-row input { flex: 1; }
+
+/* Joined teams in setup */
+#joined-list { display: flex; flex-direction: column; gap: 6px; max-height: 200px; overflow-y: auto; }
+.joined-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--card);
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  font-size: 13px;
+}
+.joined-item .jnum { font-family: 'Barlow Condensed', sans-serif; font-size: 16px; font-weight: 700; color: var(--accent); min-width: 20px; }
+.joined-item .jteam { font-weight: 600; }
+.joined-item .jowner { color: var(--muted); font-size: 12px; }
+
+.csv-hint { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+/* ============================================================
+   REFRESH TICKER
+   ============================================================ */
+#refresh-ticker {
+  font-size: 11px;
+  color: var(--muted);
+  padding: 4px 12px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  text-align: right;
+}
+
+/* ============================================================
+   NOTIFICATION
+   ============================================================ */
+#notif {
+  position: fixed;
+  top: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--accent);
+  color: #000;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  padding: 12px 32px;
+  border-radius: 8px;
+  z-index: 999;
+  display: none;
+  letter-spacing: 1px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+  text-align: center;
+}
+#notif.show { display: block; animation: fadeSlide 0.3s ease; }
+@keyframes fadeSlide {
+  from { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* ============================================================
+   EMPTY STATES
+   ============================================================ */
+.empty {
+  text-align: center;
+  color: var(--muted);
+  padding: 40px 20px;
+  font-size: 13px;
+}
+
+/* ============================================================
+   SCROLLBARS
+   ============================================================ */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* ============================================================
+   RESPONSIVE TWEAKS
+   ============================================================ */
+@media (max-width: 1100px) {
+  main { grid-template-columns: 260px 1fr 260px; }
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ====================================================
+       SETUP OVERLAY
+       ==================================================== -->
+  <div id="setup-screen">
+    <div class="setup-box">
+      <div class="setup-logo">🏏 IPL Draft</div>
+      <div class="setup-sub">Fantasy Snake Draft — Season 2025</div>
+
+      <!-- League Setup -->
+      <div class="setup-section">
+        <h3>League</h3>
+        <label>League Name</label>
+        <input type="text" id="league-name" placeholder="e.g. Premier Fantasy League" />
+        <div class="csv-hint" style="margin-top:8px;">
+          📊 <label style="display:inline;">CSV URL (Google Sheet)</label>
+        </div>
+        <input type="text" id="csv-url" placeholder="Paste your published CSV link here" style="margin-top:6px;" />
+        <div class="csv-hint">File → Publish to web → CSV → paste link above</div>
+      </div>
+
+      <!-- Join Teams -->
+      <div class="setup-section">
+        <h3>Join Teams (<span id="join-count">0</span>/10)</h3>
+        <div class="input-row">
+          <input type="text" id="join-owner" placeholder="Your name" />
+          <input type="text" id="join-team" placeholder="Team name" />
+          <button class="btn btn-teal btn-sm" onclick="joinTeam()">+ Join</button>
+        </div>
+        <div id="joined-list">
+          <div class="empty">No teams yet — be the first!</div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary btn-full" onclick="startDraft()" style="font-size:17px;padding:14px;">
+        🎯 Start Snake Draft
+      </button>
+    </div>
+  </div>
+
+  <!-- ====================================================
+       HEADER
+       ==================================================== -->
+  <header>
+    <h1 id="header-league">🏏 IPL Draft</h1>
+    <span id="status-pill">Setup</span>
+    <div id="turn-banner">⏱ YOUR TURN</div>
+  </header>
+
+  <!-- ====================================================
+       MAIN 3-COLUMN LAYOUT
+       ==================================================== -->
+  <main>
+
+    <!-- LEFT: Draft Order -->
+    <div class="panel" id="left-panel">
+      <div class="panel-title">Draft Order — Round <span id="current-round">1</span></div>
+      <div class="panel-body">
+        <div id="order-list" class="order-list">
+          <div class="empty">Draft hasn't started</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CENTER: Player Pool -->
+    <div class="panel" id="player-panel">
+      <div class="panel-title">Player Pool — <span id="avail-count">0</span> available</div>
+      <div class="panel-body">
+
+        <!-- Search -->
+        <div class="search-bar">
+          <input type="text" id="search-input" placeholder="🔍  Search player name…" oninput="renderPlayers()" />
+        </div>
+
+        <!-- Filters -->
+        <div class="filter-row" id="tier-filters">
+          <button class="filter-btn active" data-tier="ALL" onclick="setTierFilter(this)">All Tiers</button>
+          <button class="filter-btn tier-s" data-tier="S" onclick="setTierFilter(this)">S Tier</button>
+          <button class="filter-btn tier-a" data-tier="A" onclick="setTierFilter(this)">A Tier</button>
+          <button class="filter-btn tier-b" data-tier="B" onclick="setTierFilter(this)">B Tier</button>
+          <button class="filter-btn tier-c" data-tier="C" onclick="setTierFilter(this)">C Tier</button>
+          <button class="filter-btn" data-tier="OVERSEAS" onclick="setTierFilter(this)">🌏 Overseas</button>
+        </div>
+
+        <!-- Player Table -->
+        <div style="overflow-x: auto;">
+          <table id="player-table">
+            <thead>
+              <tr>
+                <th onclick="sortBy('Name')">Player ↕</th>
+                <th onclick="sortBy('Team')">IPL Team ↕</th>
+                <th onclick="sortBy('Role')">Role</th>
+                <th onclick="sortBy('Tier')">Tier ↕</th>
+                <th>OS</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="player-body">
+              <tr><td colspan="6" class="empty">Loading players…</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- RIGHT: Draft Board -->
+    <div class="panel" id="right-panel">
+      <div class="panel-title">Draft Board — <span id="pick-count">0</span> picks</div>
+      <div class="panel-body" id="draft-board">
+        <div class="empty">No picks yet</div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ====================================================
+       ADMIN BAR (FOOTER)
+       ==================================================== -->
+  <div id="admin-bar">
+    <span id="round-info">Round 1 · Pick 1</span>
+    <button class="btn btn-ghost btn-sm" onclick="undoPick()">↩ Undo Last Pick</button>
+    <button class="btn btn-ghost btn-sm" onclick="skipTurn()">⏭ Skip Turn</button>
+    <button class="btn btn-danger btn-sm" onclick="resetDraft()" style="margin-left:auto;">⚠ Reset Draft</button>
+  </div>
+
+  <!-- Refresh info -->
+  <div id="refresh-ticker">Auto-refreshing CSV every 5s · Last: <span id="last-refresh">—</span></div>
+
+</div>
+
+<!-- ====================================================
+     NOTIFICATION TOAST
+     ==================================================== -->
+<div id="notif"></div>
+
+<!-- ====================================================
+     JAVASCRIPT
+     ==================================================== -->
+<script>
+/* ============================================================
+   CONFIG — PLUG IN YOUR CSV LINK HERE
+   ============================================================
+   1. Open your Google Sheet
+   2. File → Share → Publish to web
+   3. Select "Comma-separated values (.csv)" for the sheet tab
+   4. Copy the URL and paste it below (or in the setup screen)
+   ============================================================ */
+const DEFAULT_CSV_URL = ""; // Leave blank; user pastes in setup UI
+
+/* ============================================================
+   STATE
+   ============================================================ */
+let state = {
+  league:       "",
+  csvUrl:       DEFAULT_CSV_URL,
+  teams:        [],          // [{owner, teamName}]
+  draftOrder:   [],          // index into teams[], each round
+  currentPick:  0,           // global pick index (0-based)
+  picks:        [],          // [{pick, team, player, tier}]
+  players:      [],          // raw from CSV
+  draftStarted: false,
+  totalRounds:  15,          // picks per team
+};
+
+let sortState  = { col: 'Tier', dir: 1 };
+let tierFilter = 'ALL';
+let refreshTimer = null;
+let notifTimeout = null;
+
+/* ============================================================
+   STORAGE — persist state in localStorage
+   ============================================================ */
+function saveState() {
+  localStorage.setItem('ipl_draft_state', JSON.stringify(state));
+}
+
+function loadState() {
+  const saved = localStorage.getItem('ipl_draft_state');
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      Object.assign(state, parsed);
+      return true;
+    } catch(e) { return false; }
+  }
+  return false;
+}
+
+/* ============================================================
+   SETUP: JOIN TEAMS
+   ============================================================ */
+function joinTeam() {
+  const owner = document.getElementById('join-owner').value.trim();
+  const team  = document.getElementById('join-team').value.trim();
+  if (!owner || !team) { notify("Enter both name and team name"); return; }
+  if (state.teams.length >= 10) { notify("Max 10 teams allowed"); return; }
+  if (state.teams.find(t => t.teamName.toLowerCase() === team.toLowerCase())) {
+    notify("Team name already taken"); return;
+  }
+  state.teams.push({ owner, teamName: team, picks: 0 });
+  document.getElementById('join-owner').value = '';
+  document.getElementById('join-team').value = '';
+  renderJoinedList();
+  saveState();
+}
+
+// Allow Enter key to join
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('join-team').addEventListener('keydown', e => {
+    if (e.key === 'Enter') joinTeam();
+  });
+  document.getElementById('join-owner').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('join-team').focus();
+  });
+  // Pre-fill if returning
+  if (loadState() && state.draftStarted) {
+    hideSplash();
+    document.getElementById('header-league').textContent = '🏏 ' + state.league;
+  } else if (loadState()) {
+    renderJoinedList();
+    document.getElementById('league-name').value = state.league || '';
+    document.getElementById('csv-url').value = state.csvUrl || '';
+  }
+  startAutoRefresh();
+});
+
+function renderJoinedList() {
+  const el = document.getElementById('joined-list');
+  const ct = document.getElementById('join-count');
+  ct.textContent = state.teams.length;
+  if (!state.teams.length) {
+    el.innerHTML = '<div class="empty">No teams yet — be the first!</div>';
+    return;
+  }
+  el.innerHTML = state.teams.map((t, i) => `
+    <div class="joined-item">
+      <span class="jnum">${i+1}</span>
+      <span class="jteam">${esc(t.teamName)}</span>
+      <span class="jowner">${esc(t.owner)}</span>
+    </div>
+  `).join('');
+}
+
+/* ============================================================
+   START DRAFT
+   ============================================================ */
+function startDraft() {
+  const lname = document.getElementById('league-name').value.trim();
+  const csvIn  = document.getElementById('csv-url').value.trim();
+  if (!lname) { notify("Enter a league name"); return; }
+  if (!csvIn)  { notify("Paste your CSV link"); return; }
+  if (state.teams.length < 2) { notify("Need at least 2 teams"); return; }
+
+  state.league  = lname;
+  state.csvUrl  = csvIn;
+  state.draftStarted = true;
+
+  // Randomize order
+  const shuffled = [...state.teams].sort(() => Math.random() - 0.5);
+  state.teams = shuffled;
+
+  // Build full snake draft order for all rounds
+  state.draftOrder = buildSnakeOrder(state.teams.length, state.totalRounds);
+  state.currentPick = 0;
+  state.picks = [];
+
+  saveState();
+  hideSplash();
+  document.getElementById('header-league').textContent = '🏏 ' + state.league;
+  fetchCSV();
+}
+
+function hideSplash() {
+  document.getElementById('setup-screen').style.display = 'none';
+  document.getElementById('admin-bar').classList.add('visible');
+  document.getElementById('status-pill').textContent = 'LIVE DRAFT';
+  document.getElementById('turn-banner').style.display = 'block';
+  renderOrderPanel();
+  renderDraftBoard();
+}
+
+/* ============================================================
+   SNAKE DRAFT ORDER BUILDER
+   e.g. 3 teams, 2 rounds → [0,1,2, 2,1,0]
+   ============================================================ */
+function buildSnakeOrder(n, rounds) {
+  const order = [];
+  for (let r = 0; r < rounds; r++) {
+    const fwd = Array.from({length: n}, (_, i) => i);
+    order.push(...(r % 2 === 0 ? fwd : fwd.reverse()));
+  }
+  return order;
+}
+
+function currentTeamIndex() {
+  return state.draftOrder[state.currentPick];
+}
+
+function currentTeam() {
+  return state.teams[currentTeamIndex()];
+}
+
+/* ============================================================
+   CSV LOADING
+   ============================================================ */
+function fetchCSV() {
+  if (!state.csvUrl) return;
+  const url = state.csvUrl;
+  // Add cache-busting
+  const cacheBust = url + (url.includes('?') ? '&' : '?') + '_=' + Date.now();
+
+  fetch(cacheBust)
+    .then(r => r.text())
+    .then(csv => {
+      const parsed = parseCSV(csv);
+      // Merge: preserve local drafted state, add new players
+      mergePlayerData(parsed);
+      renderPlayers();
+      renderOrderPanel();
+      document.getElementById('last-refresh').textContent = new Date().toLocaleTimeString();
+    })
+    .catch(err => {
+      document.getElementById('last-refresh').textContent = 'ERROR fetching CSV';
+      console.error('CSV fetch error:', err);
+    });
+}
+
+function parseCSV(text) {
+  const lines = text.trim().split('\n').map(l => l.trim()).filter(Boolean);
+  if (lines.length < 2) return [];
+  const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+  return lines.slice(1).map(line => {
+    const cols = splitCSVLine(line);
+    const row = {};
+    headers.forEach((h, i) => row[h] = (cols[i] || '').trim().replace(/^"|"$/g, ''));
+    return row;
+  });
+}
+
+function splitCSVLine(line) {
+  // Handle quoted fields with commas
+  const result = [];
+  let cur = '', inQ = false;
+  for (let c of line) {
+    if (c === '"') inQ = !inQ;
+    else if (c === ',' && !inQ) { result.push(cur); cur = ''; }
+    else cur += c;
+  }
+  result.push(cur);
+  return result;
+}
+
+function mergePlayerData(fresh) {
+  // Build a lookup of locally drafted players
+  const draftedMap = {};
+  state.picks.forEach(p => { draftedMap[p.player] = p.team; });
+
+  state.players = fresh.map(p => ({
+    Name:     p.Name     || p.name     || '',
+    Team:     p.Team     || p.team     || '',
+    Role:     p.Role     || p.role     || '',
+    Tier:     (p.Tier    || p.tier     || 'C').toUpperCase(),
+    Overseas: (p.Overseas|| p.overseas || 'N').toUpperCase() === 'Y',
+    Drafted:  draftedMap[p.Name] ? true : (p.Drafted || '').toUpperCase() === 'TRUE',
+    Owner:    draftedMap[p.Name] || p.Owner || '',
+  }));
+}
+
+/* ============================================================
+   AUTO REFRESH
+   ============================================================ */
+function startAutoRefresh() {
+  clearInterval(refreshTimer);
+  refreshTimer = setInterval(() => {
+    if (state.draftStarted) fetchCSV();
+  }, 5000);
+}
+
+/* ============================================================
+   PLAYER POOL RENDERING
+   ============================================================ */
+const TIER_ORDER = {S:0, A:1, B:2, C:3};
+
+function renderPlayers() {
+  const body   = document.getElementById('player-body');
+  const search = document.getElementById('search-input').value.toLowerCase();
+
+  let players = [...state.players];
+
+  // Filter
+  if (tierFilter === 'OVERSEAS') {
+    players = players.filter(p => p.Overseas);
+  } else if (tierFilter !== 'ALL') {
+    players = players.filter(p => p.Tier === tierFilter);
+  }
+
+  // Search
+  if (search) {
+    players = players.filter(p =>
+      p.Name.toLowerCase().includes(search) ||
+      p.Team.toLowerCase().includes(search) ||
+      p.Role.toLowerCase().includes(search)
+    );
+  }
+
+  // Sort
+  players.sort((a, b) => {
+    let av = a[sortState.col], bv = b[sortState.col];
+    if (sortState.col === 'Tier') { av = TIER_ORDER[a.Tier]??9; bv = TIER_ORDER[b.Tier]??9; }
+    if (typeof av === 'string') av = av.toLowerCase();
+    if (typeof bv === 'string') bv = bv.toLowerCase();
+    return av < bv ? -sortState.dir : av > bv ? sortState.dir : 0;
+  });
+
+  // Count available
+  const avail = state.players.filter(p => !p.Drafted).length;
+  document.getElementById('avail-count').textContent = avail;
+
+  if (!players.length) {
+    body.innerHTML = '<tr><td colspan="6" class="empty">No players found</td></tr>';
+    return;
+  }
+
+  const isDraftActive = state.draftStarted;
+
+  body.innerHTML = players.map(p => {
+    const tierClass = `tier-${p.Tier.toLowerCase()}`;
+    const osHtml = p.Overseas ? '<span class="overseas-dot"></span>Y' : '<span style="color:var(--muted)">N</span>';
+    const ownerHtml = p.Drafted && p.Owner ? `<span style="color:var(--muted);font-size:11px;">${esc(p.Owner)}</span>` : '';
+    const btn = p.Drafted
+      ? `<span style="color:var(--muted);font-size:12px;">Drafted</span>`
+      : `<button class="btn btn-primary btn-sm" onclick="draftPlayer('${esc(p.Name)}')" ${!isDraftActive ? 'disabled' : ''}>Pick</button>`;
+
+    return `
+      <tr class="${p.Drafted ? 'drafted' : ''}">
+        <td><strong>${esc(p.Name)}</strong>${ownerHtml ? '<br>'+ownerHtml : ''}</td>
+        <td style="color:var(--muted)">${esc(p.Team)}</td>
+        <td><span class="role-tag">${esc(p.Role)}</span></td>
+        <td><span class="tier-badge ${tierClass}">${p.Tier}</span></td>
+        <td style="font-size:12px;">${osHtml}</td>
+        <td>${btn}</td>
+      </tr>`;
+  }).join('');
+}
+
+/* ============================================================
+   SORT / FILTER CONTROLS
+   ============================================================ */
+function sortBy(col) {
+  if (sortState.col === col) sortState.dir *= -1;
+  else { sortState.col = col; sortState.dir = 1; }
+  renderPlayers();
+}
+
+function setTierFilter(btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  tierFilter = btn.dataset.tier;
+  renderPlayers();
+}
+
+/* ============================================================
+   DRAFT ACTION
+   ============================================================ */
+function draftPlayer(name) {
+  if (!state.draftStarted) { notify("Draft hasn't started"); return; }
+  if (state.currentPick >= state.draftOrder.length) { notify("Draft complete!"); return; }
+
+  const player = state.players.find(p => p.Name === name && !p.Drafted);
+  if (!player) { notify("Player already drafted or not found"); return; }
+
+  const team = currentTeam();
+  player.Drafted = true;
+  player.Owner   = team.teamName;
+  team.picks = (team.picks || 0) + 1;
+
+  const pick = {
+    pick:   state.picks.length + 1,
+    teamIdx: currentTeamIndex(),
+    team:   team.teamName,
+    owner:  team.owner,
+    player: name,
+    tier:   player.Tier,
+  };
+  state.picks.push(pick);
+  state.currentPick++;
+
+  saveState();
+  notify(`✅ ${name} → ${team.teamName}`);
+  renderOrderPanel();
+  renderDraftBoard();
+  renderPlayers();
+  updateAdminBar();
+}
+
+/* ============================================================
+   SKIP / UNDO
+   ============================================================ */
+function skipTurn() {
+  if (state.currentPick >= state.draftOrder.length) return;
+  const team = currentTeam();
+  notify(`⏭ Skipped ${team.teamName}'s turn`);
+  state.currentPick++;
+  saveState();
+  renderOrderPanel();
+  updateAdminBar();
+}
+
+function undoPick() {
+  if (!state.picks.length) { notify("Nothing to undo"); return; }
+  const last = state.picks.pop();
+  // Un-draft player
+  const p = state.players.find(pl => pl.Name === last.player);
+  if (p) { p.Drafted = false; p.Owner = ''; }
+  // Restore picks count for team
+  const team = state.teams[last.teamIdx];
+  if (team) team.picks = Math.max(0, (team.picks||0) - 1);
+  state.currentPick = Math.max(0, state.currentPick - 1);
+  saveState();
+  notify(`↩ Undid: ${last.player}`);
+  renderOrderPanel();
+  renderDraftBoard();
+  renderPlayers();
+  updateAdminBar();
+}
+
+/* ============================================================
+   ORDER PANEL
+   ============================================================ */
+function renderOrderPanel() {
+  const el = document.getElementById('order-list');
+  const round = document.getElementById('current-round');
+
+  if (!state.draftStarted) {
+    el.innerHTML = '<div class="empty">Draft hasn\'t started</div>';
+    return;
+  }
+
+  const n = state.teams.length;
+  const curRound = Math.floor(state.currentPick / n) + 1;
+  round.textContent = curRound;
+
+  // Show picks for current round
+  const roundStart = (curRound - 1) * n;
+  const roundEnd   = roundStart + n;
+  const roundOrder = state.draftOrder.slice(roundStart, roundEnd);
+
+  el.innerHTML = roundOrder.map((teamIdx, i) => {
+    const team = state.teams[teamIdx];
+    const globalPick = roundStart + i;
+    const isCurrent = globalPick === state.currentPick;
+    const isDone    = globalPick < state.currentPick;
+    return `
+      <div class="order-item ${isCurrent ? 'current' : ''} ${isDone ? 'done' : ''}">
+        <span class="pick-num">${globalPick + 1}</span>
+        <div>
+          <div style="font-weight:600;font-size:14px;">${esc(team.teamName)}</div>
+          <div style="font-size:11px;color:var(--muted);">${esc(team.owner)}</div>
+        </div>
+        <span class="team-count">${team.picks||0} picks</span>
+      </div>`;
+  }).join('');
+
+  // Turn banner
+  if (state.currentPick < state.draftOrder.length) {
+    const ct = currentTeam();
+    document.getElementById('turn-banner').textContent = `⏱ ${ct.teamName.toUpperCase()}'S PICK`;
+  } else {
+    document.getElementById('turn-banner').textContent = '✅ DRAFT COMPLETE';
+  }
+
+  updateAdminBar();
+}
+
+function updateAdminBar() {
+  const n = state.teams.length;
+  const curRound = Math.floor(state.currentPick / n) + 1;
+  const pickInRound = (state.currentPick % n) + 1;
+  document.getElementById('round-info').textContent =
+    `Round ${curRound} · Pick ${state.currentPick + 1} · ${state.picks.length} total picks`;
+}
+
+/* ============================================================
+   DRAFT BOARD
+   ============================================================ */
+function renderDraftBoard() {
+  const el = document.getElementById('draft-board');
+  document.getElementById('pick-count').textContent = state.picks.length;
+
+  if (!state.picks.length) {
+    el.innerHTML = '<div class="empty">No picks yet</div>';
+    return;
+  }
+
+  // Show newest first
+  el.innerHTML = [...state.picks].reverse().map(p => `
+    <div class="pick-row">
+      <span class="pick-n">#${p.pick}</span>
+      <div style="flex:1;min-width:0;">
+        <div class="pick-player">${esc(p.player)}</div>
+        <div class="pick-team">${esc(p.team)}</div>
+      </div>
+      <span class="pick-tier"><span class="tier-badge tier-${p.tier.toLowerCase()}">${p.tier}</span></span>
+    </div>
+  `).join('');
+}
+
+/* ============================================================
+   RESET
+   ============================================================ */
+function resetDraft() {
+  if (!confirm('Reset the entire draft? This cannot be undone.')) return;
+  localStorage.removeItem('ipl_draft_state');
+  location.reload();
+}
+
+/* ============================================================
+   NOTIFICATION TOAST
+   ============================================================ */
+function notify(msg) {
+  const el = document.getElementById('notif');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(notifTimeout);
+  notifTimeout = setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+/* ============================================================
+   UTILITY
+   ============================================================ */
+function esc(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+
+/* ============================================================
+   KEYBOARD SHORTCUT: Esc to focus search
+   ============================================================ */
+document.addEventListener('keydown', e => {
+  if (e.key === '/' && state.draftStarted) {
+    e.preventDefault();
+    document.getElementById('search-input').focus();
+  }
+});
+
+</script>
+</body>
+</html>
